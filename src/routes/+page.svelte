@@ -70,6 +70,12 @@
     await moviesStore.toggleFavorite(id);
   }
 
+  // Puntúa película a través del store
+  async function handleRate(movie: Movie, rating: number) {
+    moviesStore.clearError();
+    await moviesStore.rateMovie(movie, rating);
+  }
+
   // Elimina película a través del store
   async function handleDelete(id: string) {
     feedbackMessage = null;
@@ -125,7 +131,7 @@
       {:else}
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {#each moviesStore.movies as movie (movie.id)}
-            <MovieCard {movie} ondelete={handleDelete} onedit={handleEdit} ontogglefavorite={handleToggleFavorite} />
+            <MovieCard {movie} ondelete={handleDelete} onedit={handleEdit} ontogglefavorite={handleToggleFavorite} onrate={handleRate} />
           {/each}
         </div>
       {/if}

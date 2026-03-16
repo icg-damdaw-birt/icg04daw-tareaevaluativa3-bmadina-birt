@@ -7,13 +7,15 @@
     showActions = true,
     ondelete,
     onedit,
-    ontogglefavorite
+    ontogglefavorite,
+    onrate
   }: {
     movie: Movie;
     showActions?: boolean;
     ondelete?: (id: string) => void;
     onedit?: (movie: Movie) => void;
     ontogglefavorite?: (id: string) => void;
+    onrate?: (movie: Movie, rating: number) => void;
   } = $props();
 
   // Handlers: ejecutan callbacks del padre directamente
@@ -27,6 +29,10 @@
 
   function handleToggleFavorite() {
     ontogglefavorite?.(movie.id);
+  }
+
+  function handleRate(rating: number) {
+    onrate?.(movie, rating);
   }
 </script>
 
@@ -58,6 +64,20 @@
         {movie.isFavorite ? '❤️' : '🤍'}
       </button>
     </header>
+
+    <!-- Rating: 5 estrellas interactivas -->
+    <div class="flex gap-1">
+      {#each [1, 2, 3, 4, 5] as star}
+        <button
+          type="button"
+          class="text-xl transition-colors {star <= (movie.rating ?? 0) ? 'text-yellow-400' : 'text-slate-300 hover:text-yellow-300'}"
+          title="Puntuar {star} estrella{star > 1 ? 's' : ''}"
+          onclick={() => handleRate(star)}
+        >
+          {star <= (movie.rating ?? 0) ? '⭐' : '☆'}
+        </button>
+      {/each}
+    </div>
 
     <div class="mt-auto text-sm text-slate-500">
       {#if movie.year}

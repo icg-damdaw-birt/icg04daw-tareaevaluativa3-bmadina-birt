@@ -15,9 +15,9 @@ export interface Movie {
   posterUrl?: string | null;
   year?: number | null;
   isFavorite?: boolean;
+  rating?: number;
   createdAt?: string | null;
   updatedAt?: string | null;
-  // TODO (UD4 - Ejercicio): añadir rating?: number
 }
 
 export interface MoviePayload {

@@ -18,6 +18,7 @@ vi.mock('./api.service', () => ({
     updateMovie: vi.fn(),
     deleteMovie: vi.fn(),
     toggleFavorite: vi.fn(),
+    rateMovie: vi.fn(),
   }
 }));
 
@@ -292,6 +293,125 @@ describe('Movies Store (Svelte 5 Runes)', () => {
       expect(ok).toBe(false);
       expect(moviesStore.error).toBe('Not found');
       expect(moviesStore.mutating).toBe(false);
+    });
+  });
+
+  // ─── rateMovie ────────────────────────────────────────────────
+  describe('rateMovie()', () => {
+    it('debería puntuar una película sin rating previo', async () => {
+      // ARRANGE
+      const moviesWithoutRating: Movie[] = [
+        { id: '1', title: 'Inception', director: 'Christopher Nolan', year: 2010 },
+      ];
+      vi.mocked(api.getMovies).mockResolvedValue([...moviesWithoutRating]);
+      await moviesStore.loadMovies();
+
+      const rated: Movie = { ...moviesWithoutRating[0], rating: 4 };
+      vi.mocked(api.rateMovie).mockResolvedValue(rated);
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      const ok = await moviesStore.rateMovie(movie, 4);
+
+      // ASSERT
+      expect(api.rateMovie).toHaveBeenCalledWith('1', 4);
+      expect(ok).toBe(true);
+      expect(moviesStore.movies.find(m => m.id === '1')?.rating).toBe(4);
+    });
+
+    it('debería actualizar el rating de una película que ya tenía uno', async () => {
+      // ARRANGE
+      const moviesWithRating: Movie[] = [
+        { id: '1', title: 'Inception', director: 'Christopher Nolan', year: 2010, rating: 3 },
+      ];
+      vi.mocked(api.getMovies).mockResolvedValue([...moviesWithRating]);
+      await moviesStore.loadMovies();
+
+      const rated: Movie = { ...moviesWithRating[0], rating: 5 };
+      vi.mocked(api.rateMovie).mockResolvedValue(rated);
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      const ok = await moviesStore.rateMovie(movie, 5);
+
+      // ASSERT
+      expect(api.rateMovie).toHaveBeenCalledWith('1', 5);
+      expect(ok).toBe(true);
+      expect(moviesStore.movies.find(m => m.id === '1')?.rating).toBe(5);
+    });
+
+    it('debería rechazar un rating fuera de rango (mayor a 5)', async () => {
+      // ARRANGE
+      const moviesData: Movie[] = [
+        { id: '1', title: 'Inception', director: 'Christopher Nolan', year: 2010 },
+      ];
+      vi.mocked(api.getMovies).mockResolvedValue([...moviesData]);
+      await moviesStore.loadMovies();
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      const ok = await moviesStore.rateMovie(movie, 6);
+
+      // ASSERT
+      expect(ok).toBe(false);
+      expect(moviesStore.error).toBe('El rating debe ser un número entero entre 0 y 5');
+      expect(api.rateMovie).not.toHaveBeenCalled();
+    });
+
+    it('debería rechazar un rating negativo', async () => {
+      // ARRANGE
+      const moviesData: Movie[] = [
+        { id: '1', title: 'Inception', director: 'Christopher Nolan', year: 2010 },
+      ];
+      vi.mocked(api.getMovies).mockResolvedValue([...moviesData]);
+      await moviesStore.loadMovies();
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      const ok = await moviesStore.rateMovie(movie, -1);
+
+      // ASSERT
+      expect(ok).toBe(false);
+      expect(moviesStore.error).toBe('El rating debe ser un número entero entre 0 y 5');
+      expect(api.rateMovie).not.toHaveBeenCalled();
+    });
+
+    it('debería hacer rollback si la API falla', async () => {
+      // ARRANGE
+      const moviesData: Movie[] = [
+        { id: '1', title: 'Inception', director: 'Christopher Nolan', year: 2010, rating: 2 },
+      ];
+      vi.mocked(api.getMovies).mockResolvedValue([...moviesData]);
+      await moviesStore.loadMovies();
+
+      vi.mocked(api.rateMovie).mockRejectedValue(new Error('Server error'));
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      const ok = await moviesStore.rateMovie(movie, 5);
+
+      // ASSERT
+      expect(ok).toBe(false);
+      expect(moviesStore.error).toBe('Server error');
+      expect(moviesStore.movies.find(m => m.id === '1')?.rating).toBe(2);
+      expect(moviesStore.mutating).toBe(false);
+    });
+
+    it('no debería cambiar el número de películas al puntuar', async () => {
+      // ARRANGE
+      vi.mocked(api.getMovies).mockResolvedValue([...mockMovies]);
+      await moviesStore.loadMovies();
+      const initialCount = moviesStore.movies.length;
+
+      const rated: Movie = { ...mockMovies[0], rating: 3 };
+      vi.mocked(api.rateMovie).mockResolvedValue(rated);
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      await moviesStore.rateMovie(movie, 3);
+
+      // ASSERT
+      expect(moviesStore.movies.length).toBe(initialCount);
     });
   });
 });

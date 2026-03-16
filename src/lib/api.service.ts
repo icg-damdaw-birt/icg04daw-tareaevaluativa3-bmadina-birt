@@ -129,5 +129,7 @@ export const api = {
   toggleFavorite: (id: string) =>
     request<Movie>(`/api/movies/${id}/favorite`, { method: 'PATCH' }),
 
-  // TODO (UD4 - Ejercicio): rateMovie
+  // Puntúa una película de 0 a 5 estrellas.
+  rateMovie: (id: string, rating: number) =>
+    request<Movie>(`/api/movies/${id}/rating`, { method: 'PATCH', body: { rating } }),
 };
