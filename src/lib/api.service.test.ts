@@ -289,6 +289,122 @@ describe('API Service - Autenticación', () => {
       }
     });
   });
+
+  // ==========================================
+  // GRUPO: Toggle Favorito
+  // ==========================================
+  describe('toggleFavorite', () => {
+    it('debería llamar a PATCH /api/movies/:id/favorite sin body', async () => {
+      // ARRANGE
+      const token = 'valid-token';
+      authToken.set(token);
+
+      const mockMovie = {
+        id: 'movie-1',
+        title: 'Inception',
+        director: 'Christopher Nolan',
+        year: 2010,
+        isFavorite: true,
+      };
+
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => name === 'content-type' ? 'application/json' : null
+        },
+        json: async () => mockMovie,
+      });
+
+      // ACT
+      const result = await api.toggleFavorite('movie-1');
+
+      // ASSERT
+      expect(result).toEqual(mockMovie);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+      const callArgs = (globalThis.fetch as any).mock.calls[0];
+      expect(callArgs[0]).toBe('http://localhost:3000/api/movies/movie-1/favorite');
+      expect(callArgs[1].method).toBe('PATCH');
+      expect(callArgs[1].body).toBeUndefined();
+    });
+
+    it('debería devolver la película con isFavorite invertido', async () => {
+      // ARRANGE
+      authToken.set('valid-token');
+
+      const toggledMovie = {
+        id: 'movie-2',
+        title: 'The Matrix',
+        director: 'Wachowski Sisters',
+        year: 1999,
+        isFavorite: false,
+      };
+
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => name === 'content-type' ? 'application/json' : null
+        },
+        json: async () => toggledMovie,
+      });
+
+      // ACT
+      const result = await api.toggleFavorite('movie-2');
+
+      // ASSERT
+      expect(result.isFavorite).toBe(false);
+    });
+
+    it('debería lanzar ApiError si la película no existe (404)', async () => {
+      // ARRANGE
+      authToken.set('valid-token');
+
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        headers: {
+          get: (name: string) => name === 'content-type' ? 'application/json' : null
+        },
+        json: async () => ({ error: 'Película no encontrada' }),
+      });
+
+      // ACT & ASSERT
+      try {
+        await api.toggleFavorite('nonexistent');
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).status).toBe(404);
+        expect((error as ApiError).message).toBe('Película no encontrada');
+      }
+    });
+
+    it('debería lanzar ApiError si hay un error del servidor (500)', async () => {
+      // ARRANGE
+      authToken.set('valid-token');
+
+      (globalThis.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: {
+          get: (name: string) => name === 'content-type' ? 'application/json' : null
+        },
+        json: async () => ({ error: 'Error al actualizar favorito' }),
+      });
+
+      // ACT & ASSERT
+      try {
+        await api.toggleFavorite('movie-1');
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).status).toBe(500);
+        expect((error as ApiError).message).toBe('Error al actualizar favorito');
+      }
+    });
+  });
 });
 
 /**
