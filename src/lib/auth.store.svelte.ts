@@ -9,22 +9,40 @@ import { browser } from '$app/environment';
 
 const TOKEN_STORAGE_KEY = 'mivideoteca-token';
 
+function getStorage(): Storage | null {
+  if (!browser) return null;
+
+  const storage = window.localStorage as Partial<Storage> | undefined;
+  if (
+    !storage ||
+    typeof storage.getItem !== 'function' ||
+    typeof storage.setItem !== 'function' ||
+    typeof storage.removeItem !== 'function'
+  ) {
+    return null;
+  }
+
+  return storage as Storage;
+}
+
 // Persistencia: guarda el token en localStorage (solo en el navegador)
 // SSR safety: no accede a localStorage durante server-side rendering
 function persist(value: string | null) {
-  if (!browser) return;
+  const storage = getStorage();
+  if (!storage) return;
 
   if (value) {
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, value);
+    storage.setItem(TOKEN_STORAGE_KEY, value);
   } else {
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    storage.removeItem(TOKEN_STORAGE_KEY);
   }
 }
 
 // Recupera el token persistido para restaurar sesiones tras recargar
 function readPersistedToken(): string | null {
-  if (!browser) return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  const storage = getStorage();
+  if (!storage) return null;
+  return storage.getItem(TOKEN_STORAGE_KEY);
 }
 
 // Estado reactivo global con Svelte 5 runes

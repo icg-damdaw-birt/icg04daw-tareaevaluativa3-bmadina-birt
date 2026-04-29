@@ -340,6 +340,27 @@ describe('Movies Store (Svelte 5 Runes)', () => {
       expect(moviesStore.movies.find(m => m.id === '1')?.rating).toBe(5);
     });
 
+    it('debería permitir quitar la valoración y dejar el rating a 0', async () => {
+      // ARRANGE
+      const moviesWithRating: Movie[] = [
+        { id: '1', title: 'Inception', director: 'Christopher Nolan', year: 2010, rating: 4 },
+      ];
+      vi.mocked(api.getMovies).mockResolvedValue([...moviesWithRating]);
+      await moviesStore.loadMovies();
+
+      const unrated: Movie = { ...moviesWithRating[0], rating: 0 };
+      vi.mocked(api.rateMovie).mockResolvedValue(unrated);
+
+      // ACT
+      const movie = moviesStore.movies.find(m => m.id === '1')!;
+      const ok = await moviesStore.rateMovie(movie, 0);
+
+      // ASSERT
+      expect(api.rateMovie).toHaveBeenCalledWith('1', 0);
+      expect(ok).toBe(true);
+      expect(moviesStore.movies.find(m => m.id === '1')?.rating).toBe(0);
+    });
+
     it('debería rechazar un rating fuera de rango (mayor a 5)', async () => {
       // ARRANGE
       const moviesData: Movie[] = [

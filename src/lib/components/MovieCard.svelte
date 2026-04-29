@@ -32,7 +32,8 @@
   }
 
   function handleRate(rating: number) {
-    onrate?.(movie, rating);
+    const currentRating = movie.rating ?? 0;
+    onrate?.(movie, rating === currentRating ? 0 : rating);
   }
 </script>
 
@@ -71,7 +72,9 @@
         <button
           type="button"
           class="text-xl transition-colors {star <= (movie.rating ?? 0) ? 'text-yellow-400' : 'text-slate-300 hover:text-yellow-300'}"
-          title="Puntuar {star} estrella{star > 1 ? 's' : ''}"
+          title={star === (movie.rating ?? 0)
+            ? 'Quitar valoración'
+            : `Puntuar ${star} estrella${star > 1 ? 's' : ''}`}
           onclick={() => handleRate(star)}
         >
           {star <= (movie.rating ?? 0) ? '⭐' : '☆'}
